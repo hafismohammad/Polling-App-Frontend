@@ -35,9 +35,9 @@ function CreatePollModal({ closeModal, handleAddPoll }) {
         return;
       }
       const response = await createPoll(question, options);
-      if (response.status === 200) {
+      if (response.status === 201) {
         toast.success(response.data.message, { theme: "colored" });
-        handleAddPoll(response.data.poll);
+        handleAddPoll(response.data.data);
         closeModal();
       }
     } catch (error) {

@@ -1,18 +1,25 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { authContext } from "../context/AuthContext";
-import {   Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
 const Auth = () => {
   const { token } = useContext(authContext);
-   const navigae = useNavigate()
-   console.log('token', token);
-   
-  if (token === null) {
-    navigae('/login')
+  const [isLoading, setIsLoading] = useState(true); 
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setIsLoading(false); 
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>; 
   }
 
-  // return token ? <Outlet /> : <Navigate to="/login"/>;
-  return  <Outlet /> 
+  return token ? <Outlet /> : <Navigate to="/login" />;
 };
 
 export default Auth;

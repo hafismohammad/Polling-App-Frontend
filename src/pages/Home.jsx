@@ -6,6 +6,7 @@ import { getpoll, addVote, removeCurrentPoll } from "../services/pollService";
 import { toast } from "react-toastify";
 import { getUser } from "../services/userService";
 import { authContext } from "../context/AuthContext";
+import useSocket from "../hooks/useSocket";
 
 function Home() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -17,6 +18,7 @@ function Home() {
   const [filterOption, setFilterOption] = useState("all");
 
   const { token } = useContext(authContext);
+  const socket = useSocket("http://localhost:8000");
 
   const openModal = () => {
     setModalOpen(true);
@@ -34,7 +36,15 @@ function Home() {
     try {
       const response = await addVote(pollId, optionId);
       if (response.status === 200) {
+        const pollData = {
+          pollId: pollId,
+          optionId: optionId,
+        };
+
+        socket.emit("addVote", pollData);
+
         toast.success(response.data.message, { theme: "colored" });
+
         setPolls((prevPolls) =>
           prevPolls.map((poll) => {
             if (poll._id === pollId) {
@@ -52,20 +62,42 @@ function Home() {
         );
       }
     } catch (error) {
-      console.log("err", error);
-
-      console.error("Failed to submit vote:", error);
-      toast.error("Failed to submit vote. Please try again.", {
-        theme: "colored",
-      });
+      toast.error(error, { theme: "colored" });
     }
   };
+
+  useEffect(() => {
+    if (socket) {
+      const handleVoteUpdated = (updatedPoll) => {
+        setPolls((prevPolls) =>
+          prevPolls.map((poll) =>
+            poll._id === updatedPoll.pollId
+              ? {
+                  ...poll,
+                  options: poll.options.map((option) =>
+                    option._id === updatedPoll.optionId
+                      ? { ...option, votes: option.votes + 1 }
+                      : option
+                  ),
+                }
+              : poll
+          )
+        );
+      };
+
+      socket.on("voteUpdated", handleVoteUpdated);
+
+      return () => {
+        socket.off("voteUpdated", handleVoteUpdated);
+      };
+    }
+  }, [socket]);
 
   useEffect(() => {
     const fetchPolls = async () => {
       try {
         const response = await getpoll();
-        setPolls(response.data.polls || []);
+        setPolls(response.data.data || []);
       } catch (error) {
         console.error("Failed to fetch polls:", error);
       }
@@ -94,6 +126,8 @@ function Home() {
   const handleRemovePoll = async (pollId) => {
     try {
       const response = await removeCurrentPoll(pollId);
+      console.log('res12',response);
+      
       if (response.status === 200) {
         toast.success(response.data.message);
         setPolls((prev) => prev.filter((poll) => poll._id !== pollId));
@@ -107,12 +141,12 @@ function Home() {
     const matchesSearchTerm = poll.question
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-      if (filterOption === "all") {
-        return matchesSearchTerm;
-      }
-      if (filterOption === "userAdded") {
-        return matchesSearchTerm && poll.userId === userId;
-      }
+    if (filterOption === "all") {
+      return matchesSearchTerm;
+    }
+    if (filterOption === "userAdded") {
+      return matchesSearchTerm && poll.userId === userId;
+    }
 
     return false;
   });
@@ -124,53 +158,47 @@ function Home() {
 
   return (
     <>
-      <div className="flex justify-center items-center mt-20">
-        <div className="flex items-center space-x-10">
-          <div>
-            <button
-              onClick={openModal}
-              className="bg-gray-300 px-4 py-2 hover:bg-gray-400 rounded-md shadow-md font-bold"
-            >
-              Create Poll
-            </button>
+      <div className="flex flex-col lg:flex-row justify-center items-center mt-10 space-y-4 lg:space-y-0 lg:space-x-10">
+        <button
+          onClick={openModal}
+          className="bg-gray-300 px-4 py-2 hover:bg-gray-400 rounded-md shadow-md font-bold w-full lg:w-auto"
+        >
+          Create Poll
+        </button>
+
+        <input
+          className="border p-2 rounded-md w-full lg:w-[500px]"
+          type="text"
+          placeholder="Search..."
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <div className="relative w-full lg:w-auto">
+          <div
+            className="flex items-center space-x-2 cursor-pointer bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400 justify-center"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <FontAwesomeIcon icon={faFilter} className="text-gray-600" />
+            <span className="font-medium">Filter</span>
           </div>
-
-          <input
-            className="border p-2 rounded-md w-[500px]"
-            type="text"
-            placeholder="Search..."
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-
-          <div className="relative">
-            <div className="flex items-center space-x-2 cursor-pointer bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400">
-              <FontAwesomeIcon icon={faFilter} className="text-gray-600" />
-              <span
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="font-medium"
-              >
-                Filter
-              </span>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-full lg:w-48 bg-white border rounded-md shadow-lg">
+              <ul className="py-1">
+                <li
+                  onClick={() => handleFilterOption("all")}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  All Polls
+                </li>
+                <li
+                  onClick={() => handleFilterOption("userAdded")}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  Your Polls
+                </li>
+              </ul>
             </div>
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg">
-                <ul className="py-1">
-                  <li
-                    onClick={() => handleFilterOption("all")}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    All Polls
-                  </li>
-                  <li
-                    onClick={() => handleFilterOption("userAdded")}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    Your Polls
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
@@ -229,14 +257,11 @@ function Home() {
                           </label>
                           <div className="flex items-center space-x-2">
                             <div className="relative w-full bg-gray-200 rounded-full h-2.5">
-                              <div className="relative w-full bg-gray-200 rounded-full h-2.5">
-                                <div
-                                  className="absolute top-0 left-0 h-full rounded-full bg-blue-600 transition-all duration-300"
-                                  style={{ width: `${percentage}%` }}
-                                ></div>
-                              </div>
+                              <div
+                                className="absolute top-0 left-0 h-full rounded-full bg-blue-600 transition-all duration-300"
+                                style={{ width: `${percentage}%` }}
+                              ></div>
                             </div>
-
                             <span className="text-md text-gray-500">
                               {Math.round(percentage)}%
                             </span>
@@ -247,7 +272,7 @@ function Home() {
                   </div>
                   <button
                     type="submit"
-                    className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
+                    className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium w-full"
                     disabled={!selectedOptions[poll._id]}
                   >
                     Submit Vote

@@ -3,24 +3,27 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useContext, useEffect, useRef, useState } from "react";
 import { getUser } from "../services/userService";
 import { authContext } from "../context/AuthContext";
-import useSocket from "../hooks/useSocket";
 import { getAllMessages } from "../services/chatService";
+import useSocket from "../hooks/useSocket";
+import Profile from "../../src/assets/profile-img.png";
 
 function UserChat() {
   const [user, setUser] = useState({});
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [typingUser, setTypingUser] = useState(null);
-  
-  const socket = useSocket("http://localhost:8000");
+  const [typingUser, setTypingUser] = useState("");
+
+  const socket = useSocket(import.meta.env.VITE_BASE_URL);
   const { token } = useContext(authContext);
 
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 0);
   };
 
   useEffect(() => {
@@ -82,66 +85,27 @@ function UserChat() {
     };
 
     socket.emit("sendMessage", newMessage);
-    socket.emit('chatNotification', {userName: user.name, message})
+    socket.emit("chatNotification", { userName: user.name, message });
     setMessages((prevMessages) => [
       ...prevMessages,
       { ...newMessage, user: user.name },
     ]);
-
-
-
     setMessage("");
     scrollToBottom();
   };
 
-  useEffect(() => {
-    let typingTimeout;
-
-    if (socket) {
-      const handleTyping = () => {
-        
-        socket.emit("typing", { userName: user.name, groupId: "general" });
-      };
-  
-      const handleStopTyping = () => {
-        socket.emit("stopTyping", { userName: user.name, groupId: "general" });
-      };
-  
-      const handleKeyPress = () => {
-        handleTyping();
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => handleStopTyping(), 1000); 
-      };
-
-      document.addEventListener("keydown", handleKeyPress);
-
-      return () => {
-        document.removeEventListener("keydown", handleKeyPress);
-        clearTimeout(typingTimeout);
-      };
-    }
-  }, [socket, user.name]);
+  const handleChange = (e) => {
+    setMessage(e.target.value);
+    socket.emit("typing", { userName: user?.name });
+  };
 
   useEffect(() => {
     if (socket) {
-      console.log("Socket connected:", socket.id);
-  
-      socket.on("userTyping", ({ userName }) => {
-        console.log('userTyping event received:', userName);
-        setTypingUser(userName);
+      socket.on("userTyping", (typingData) => {
+        setTypingUser(typingData);
+        const timer = setTimeout(() => setTypingUser(""), 3000);
+        return () => clearTimeout(timer);
       });
-  
-      socket.on("userStoppedTyping", () => {
-        console.log("userStoppedTyping event received");
-        setTypingUser(null);
-      });
-  
-      return () => {
-        socket.off("userTyping");
-        socket.off("userStoppedTyping");
-      };
-    } else {
-      console.log("Socket not initialized yet");
     }
   }, [socket]);
 
@@ -149,45 +113,54 @@ function UserChat() {
     <div className="flex justify-center mt-20">
       <div className="h-[80vh] w-full max-w-5xl bg-white shadow-md flex flex-col">
         <div className=" flex items-center justify-center h-[7vh] w-full p-3 bg-gray-700 ">
-          <h1 className="text-white ml-3 justify-center ">General Group Chat</h1>
+          <h1 className="text-white ml-3 justify-center ">
+            General Group Chat
+          </h1>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
-          <div className="flex flex-col space-y-4 p-1">
+        <div className="flex-1 overflow-y-auto scroll-smooth p-4 bg-gray-100">
+          <div className="flex flex-col space-y-4 p-1 chat-window relative h-full">
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex items-center space-x-5 ${
+                className={`flex items-center space-x-3 ${
                   msg.user === user.name ? "justify-end" : "justify-start"
                 }`}
               >
                 {msg.user !== user.name && (
                   <img
+                    src={Profile}
                     className="h-12 w-12 bg-slate-600 rounded-full"
                     alt="profile"
                   />
                 )}
                 <div
-                  className={`chat-bubble max-w-xs p-3 ${
+                  className={`chat-bubble p-3 ${
                     msg.user === user.name
-                      ? "bg-blue-500 text-white rounded-lg"
-                      : "bg-gray-300 text-gray-800 rounded-lg"
+                      ? "bg-blue-500 text-white rounded-tl-lg rounded-bl-lg rounded-tr-lg"
+                      : "bg-gray-300 text-gray-800 rounded-tl-lg rounded-br-lg rounded-tr-lg"
                   }`}
+                  style={{ maxWidth: "75%", wordBreak: "break-word" }}
                 >
-                  <h1 className="font-bold">{msg.user}</h1>
-                  {msg.message}
+                  <h1 className="font-bold mb-1">{msg.user}</h1>
+                  <p>{msg.message}</p>
                 </div>
                 {msg.user === user.name && (
                   <img
+                    src={Profile}
                     className="h-12 w-12 bg-slate-600 rounded-full"
                     alt="profile"
                   />
                 )}
               </div>
             ))}
-            <div className="flex items-center space-x-3">
-              {typingUser && <div className="italic text-gray-600">is typing...</div>}
-            </div>
+            {typingUser && (
+              <div className="typing-indicator absolute bottom-4 left-4 flex space-x-1 items-start">
+                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse delay-150"></div>
+                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse delay-300"></div>
+              </div>
+            )}
             <div ref={messagesEndRef}></div>
           </div>
         </div>
@@ -196,7 +169,7 @@ function UserChat() {
           <input
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleChange}
             placeholder="Type a message"
             className="w-full max-w-4xl p-2 rounded-lg bg-gray-700 text-gray-200 focus:outline-none"
           />

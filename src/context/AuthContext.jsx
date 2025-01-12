@@ -13,7 +13,7 @@ const AuthProvider = ({ children }) => {
     if (storedToken) {
       setToken(storedToken);
     }
-  }, []);
+  }, [token]);
 
   return (
     <authContext.Provider value={{ token, setToken }}>

@@ -49,8 +49,7 @@ const SignUp = () => {
     try {
       if (validate()) {
         const response = await signupService(data);
-        
-        if(response.status === 200) {
+        if(response.status === 201) {
           toast.success(response.data.message,{theme: 'colored'})
           setToken(response.data.token)
           navigate('/')

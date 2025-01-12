@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = new axios.create({
-  baseURL: "http://localhost:8000/api/user",
+  baseURL: `http://localhost:8000/api/user`,
 });
 
 export const signupService = async (data) => {
@@ -47,4 +47,3 @@ export const getUser = async (token) => {
     throw error;
   }
 };
-
