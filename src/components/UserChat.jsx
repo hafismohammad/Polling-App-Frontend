@@ -13,7 +13,7 @@ function UserChat() {
   const [messages, setMessages] = useState([]);
   const [typingUser, setTypingUser] = useState("");
 
-  const socket = useSocket(import.meta.env.VITE_BASE_URL);
+  const socket = useSocket('https://polling-app.hpc.tw');
   const { token } = useContext(authContext);
 
   const messagesEndRef = useRef(null);
