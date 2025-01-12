@@ -14,7 +14,7 @@ function Navbar() {
   const [notifications, setNotifications] = useState([]);
 
   const { token } = useContext(authContext);
-  const socket = useSocket(import.meta.env.VITE_BASE_URL);
+  const socket = useSocket('https://polling-app.hpc.tw');
 
   useEffect(() => {
     const fetchUser = async () => {
