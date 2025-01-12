@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: `http://localhost:8000/api/chat`,
+  baseURL: `https://polling-app.hpc.tw/api/chat`,
 });
 
 axiosInstance.interceptors.request.use(

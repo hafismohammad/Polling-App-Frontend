@@ -18,7 +18,7 @@ function Home() {
   const [filterOption, setFilterOption] = useState("all");
 
   const { token } = useContext(authContext);
-  const socket = useSocket("http://localhost:8000");
+  const socket = useSocket("https://polling-app.hpc.tw/");
 
   const openModal = () => {
     setModalOpen(true);

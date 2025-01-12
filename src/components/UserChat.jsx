@@ -118,8 +118,8 @@ function UserChat() {
           </h1>
         </div>
 
-        <div className="flex-1 overflow-y-auto scroll-smooth p-4 bg-gray-100">
-          <div className="flex flex-col space-y-4 p-1 chat-window relative h-full">
+        <div className="flex-1 overflow-y-auto  scroll-smooth p-4 bg-gray-100">
+          <div className="flex flex-col space-y-4 p-1 chat-window relative">
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -156,11 +156,12 @@ function UserChat() {
             ))}
             {typingUser && (
               <div className="typing-indicator absolute bottom-4 left-4 flex space-x-1 items-start">
-                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse delay-150"></div>
-                <div className="w-3 h-3 bg-gray-500 rounded-full animate-pulse delay-300"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-150"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-300"></div>
               </div>
             )}
+
             <div ref={messagesEndRef}></div>
           </div>
         </div>
