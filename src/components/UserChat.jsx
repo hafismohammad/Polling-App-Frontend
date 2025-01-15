@@ -13,7 +13,9 @@ function UserChat() {
   const [messages, setMessages] = useState([]);
   const [typingUser, setTypingUser] = useState("");
 
-  const socket = useSocket('https://polling-app.hpc.tw');
+  // const socket = useSocket('https://polling-app.hpc.tw');
+  const socket = useSocket('http://localhost:8000');
+
   const { token } = useContext(authContext);
 
   const messagesEndRef = useRef(null);

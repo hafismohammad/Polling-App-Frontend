@@ -1,7 +1,9 @@
 import axios from "axios";
 
+// baseURL: `https://polling-app.hpc.tw/api/poll`,
 const axiosInstance = axios.create({
-  baseURL: `https://polling-app.hpc.tw/api/poll`,
+  baseURL: `http://localhost:8000/api/poll`,
+
 });
 
 axiosInstance.interceptors.request.use(
@@ -67,3 +69,12 @@ export const removeCurrentPoll = async (pollId) => {
     throw error.response.data.message;
   }
 };
+
+export const removeVote = async (pollId) => {
+  try {
+    const response = await axiosInstance.put(`/${pollId}`);
+    return response;
+  } catch (error) {
+    throw error.response.data.message;
+  }
+}

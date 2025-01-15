@@ -1,11 +1,19 @@
 import { useContext, useEffect, useState } from "react";
-import CreatePollModal from "../components/CreatePollModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faClose, faFilter } from "@fortawesome/free-solid-svg-icons";
-import { getpoll, addVote, removeCurrentPoll } from "../services/pollService";
+import {
+  faFilter,
+  faEllipsisVertical,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+  getpoll,
+  addVote,
+  removeCurrentPoll,
+  removeVote,
+} from "../services/pollService";
 import { toast } from "react-toastify";
 import { getUser } from "../services/userService";
 import { authContext } from "../context/AuthContext";
+import CreatePollModal from "../components/CreatePollModal";
 import useSocket from "../hooks/useSocket";
 
 function Home() {
@@ -16,9 +24,12 @@ function Home() {
   const [userId, setuserId] = useState();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filterOption, setFilterOption] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState([]);
 
   const { token } = useContext(authContext);
-  const socket = useSocket("https://polling-app.hpc.tw");
+  // const socket = useSocket("https://polling-app.hpc.tw");
+  const socket = useSocket("http://localhost:8000");
 
   const openModal = () => {
     setModalOpen(true);
@@ -123,11 +134,10 @@ function Home() {
     }));
   };
 
-  const handleRemovePoll = async (pollId) => {
+  const handleDeletePoll = async (pollId) => {
     try {
       const response = await removeCurrentPoll(pollId);
-      console.log('res12',response);
-      
+
       if (response.status === 200) {
         toast.success(response.data.message);
         setPolls((prev) => prev.filter((poll) => poll._id !== pollId));
@@ -155,6 +165,88 @@ function Home() {
     setIsDropdownOpen(false);
     setFilterOption(option);
   };
+
+  const handleModal = (pollId) => {
+    setSelectedPoll(pollId);
+    setIsModalOpen(!isModalOpen);
+  };
+
+  const handleRemoveVote = async (pollId, optionId) => {
+    try {
+      const response = await removeVote(pollId);
+
+      if (response.status === 200) {
+        toast.success(response.data.message);
+
+        const pollData = {
+          pollId: pollId,
+          optionId: optionId,
+        };
+
+        socket.emit("removeVote", pollData);
+
+        setPolls((prevPolls) =>
+          prevPolls.map((poll) => {
+            if (poll._id === pollId) {
+              const updatedPoll = {
+                ...poll,
+                options: poll.options.map((option) => {
+                  const userVote = poll.votedUsers.find(
+                    (vote) =>
+                      vote.userId === response.data.userId &&
+                      vote.optionId === option._id
+                  );
+
+                  if (userVote) {
+                    return {
+                      ...option,
+                      votes: option.votes - 1,
+                    };
+                  }
+                  return option;
+                }),
+                votedUsers: poll.votedUsers.filter(
+                  (vote) => vote.userId !== response.data.userId
+                ),
+              };
+              return updatedPoll;
+            }
+            return poll;
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error removing vote:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (socket) {
+      const handleVoteRemoved = (updatedPoll) => {
+        console.log("Received voteRemoved event:", updatedPoll);
+        setPolls((prevPolls) =>
+          prevPolls.map((poll) =>
+            poll._id === updatedPoll.pollId
+              ? {
+                  ...poll,
+                  options: poll.options.map((option) =>
+                    option._id === updatedPoll.optionId
+                      ? { ...option, votes: Math.max(option.votes - 1, 0) }
+                      : option
+                  ),
+                }
+              : poll
+          )
+        );
+      };
+
+      socket.on("voteRemoved", handleVoteRemoved);
+
+      return () => {
+        socket.off("voteRemoved", handleVoteRemoved);
+      };
+    }
+  }, [socket]);
 
   return (
     <>
@@ -215,16 +307,51 @@ function Home() {
                 key={poll._id}
                 className="bg-slate-50 w-full p-5 rounded-lg shadow-xl flex flex-col justify-between"
               >
-                <h2 className="flex justify-between text-xl font-semibold text-gray-800 mb-4">
-                  {poll.question}
-                  {poll.userId === userId && (
+                <div className="relative">
+                  <h2 className="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                    <span>{poll.question}</span>
+
+                    {/* Ellipsis Button */}
                     <FontAwesomeIcon
-                      onClick={() => handleRemovePoll(poll._id)}
-                      className="h-8 w-8"
-                      icon={faClose}
+                      onClick={() => handleModal(poll._id)}
+                      icon={faEllipsisVertical}
+                      className="text-gray-500 text-2xl cursor-pointer ml-4"
                     />
+                  </h2>
+
+                  {isModalOpen && selectedPoll === poll._id && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
+                      <ul className="py-1">
+                        <li
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() =>
+                            handleRemoveVote(
+                              poll._id,
+                              selectedOptions[poll._id]
+                            )
+                          }
+                        >
+                          Remove Vote
+                        </li>
+                        <li
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          // onClick={() => handleVotedUsers(poll._id)}
+                        >
+                          Voted Users
+                        </li>
+                        {poll.userId === userId && (
+                          <li
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleDeletePoll(poll._id)}
+                          >
+                            Delete Poll
+                          </li>
+                        )}
+                      </ul>
+                    </div>
                   )}
-                </h2>
+                </div>
+
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -263,13 +390,14 @@ function Home() {
                               ></div>
                             </div>
                             <span className="text-md text-gray-500">
-                              {Math.round(percentage)}%
+                              {option.votes} votes ({Math.round(percentage)}%)
                             </span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
+
                   <button
                     type="submit"
                     className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium w-full"
