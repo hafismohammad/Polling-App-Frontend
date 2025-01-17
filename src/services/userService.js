@@ -3,7 +3,7 @@ import axios from "axios";
 // baseURL:  `http://localhost:8000/api/user`,
 const axiosInstance = new axios.create({
   baseURL:  `https://polling-app.hpc.tw/api/user`,
-
+  withCredentials: true
 });
 
 export const signupService = async (data) => {
@@ -18,7 +18,9 @@ export const signupService = async (data) => {
 
 export const loginService = async (data) => {
   try {
-    const response = await axiosInstance.post("/login", data);
+    const response = await axiosInstance.post("/login", data, {
+      withCredentials: true,
+    });
     localStorage.setItem("token", response.data.token);
     return response;
   } catch (error) {
