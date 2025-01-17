@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// baseURL: `https://polling-app.hpc.tw/api/poll`,
+// baseURL: `http://localhost:8000/api/poll`,
 const axiosInstance = axios.create({
-  baseURL: `http://localhost:8000/api/poll`,
+  baseURL: `https://polling-app.hpc.tw/api/poll`,
 
 });
 

@@ -28,8 +28,8 @@ function Home() {
   const [selectedPoll, setSelectedPoll] = useState([]);
 
   const { token } = useContext(authContext);
-  // const socket = useSocket("https://polling-app.hpc.tw");
-  const socket = useSocket("http://localhost:8000");
+  const socket = useSocket("https://polling-app.hpc.tw");
+  // const socket = useSocket("http://localhost:8000");
 
   const openModal = () => {
     setModalOpen(true);
