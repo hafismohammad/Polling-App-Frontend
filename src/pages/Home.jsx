@@ -108,6 +108,7 @@ function Home() {
     const fetchPolls = async () => {
       try {
         const response = await getpoll();
+        
         setPolls(response.data.data || []);
       } catch (error) {
         console.error("Failed to fetch polls:", error);
@@ -248,6 +249,14 @@ function Home() {
     }
   }, [socket]);
 
+  // const handleVotedUsers = () => {
+  //   try {
+      
+  //   } catch (error) {
+      
+  //   }
+  // }
+ 
   return (
     <>
       <div className="flex flex-col lg:flex-row justify-center items-center mt-10 space-y-4 lg:space-y-0 lg:space-x-10">
@@ -351,6 +360,7 @@ function Home() {
                     </div>
                   )}
                 </div>
+
 
                 <form
                   onSubmit={(e) => {
