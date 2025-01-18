@@ -342,12 +342,12 @@ function Home() {
                         >
                           Remove Vote
                         </li>
-                        <li
+                        {/* <li
                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                           // onClick={() => handleVotedUsers(poll._id)}
                         >
                           Voted Users
-                        </li>
+                        </li> */}
                         {poll.userId === userId && (
                           <li
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
