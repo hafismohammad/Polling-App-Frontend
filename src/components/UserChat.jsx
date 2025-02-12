@@ -14,7 +14,7 @@ function UserChat() {
   const [typingUser, setTypingUser] = useState("");
 
   const socket = useSocket('https://polling-app.hpc.tw');
-  // const socket = useSocket('http://localhost:8000');
+  // const socket = useSocket("http://localhost:8000");
 
   const { token } = useContext(authContext);
 
@@ -63,18 +63,20 @@ function UserChat() {
           {
             ...newMessage,
             user: newMessage.userName,
+            timestamp: newMessage.timestamp || new Date().toISOString(), 
           },
         ]);
         scrollToBottom();
       });
     }
-
+  
     return () => {
       if (socket) {
         socket.off("receiveMessage");
       }
     };
   }, [socket]);
+  
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -84,6 +86,7 @@ function UserChat() {
       userName: user.name,
       message,
       groupId: "general",
+      timestamp: new Date().toISOString(),
     };
 
     socket.emit("sendMessage", newMessage);
@@ -120,42 +123,26 @@ function UserChat() {
           </h1>
         </div>
 
-        <div className="flex-1 overflow-y-auto  scroll-smooth p-4 bg-gray-100">
-          <div className="flex flex-col space-y-4 p-1 chat-window relative">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
+          <div className="flex flex-col space-y-4 chat-window relative">
             {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex items-center space-x-3 ${
-                  msg.user === user.name ? "justify-end" : "justify-start"
-                }`}
-              >
-                {msg.user !== user.name && (
-                  <img
-                    src={Profile}
-                    className="h-12 w-12 bg-slate-600 rounded-full"
-                    alt="profile"
-                  />
-                )}
-                <div
-                  className={`chat-bubble p-3 ${
-                    msg.user === user.name
-                      ? "bg-blue-500 text-white rounded-tl-lg rounded-bl-lg rounded-tr-lg"
-                      : "bg-gray-300 text-gray-800 rounded-tl-lg rounded-br-lg rounded-tr-lg"
-                  }`}
-                  style={{ maxWidth: "75%", wordBreak: "break-word" }}
-                >
-                  <h1 className="font-bold mb-1">{msg.user}</h1>
-                  <p>{msg.message}</p>
+              <div key={index} className={`flex items-end space-x-3 ${msg.user === user.name ? "justify-end" : "justify-start"}`}>
+                {msg.user !== user.name && <img src={Profile} className="h-12 w-12 rounded-full" alt="profile" />}
+                
+                <div className="flex flex-col max-w-[80%]">
+                  <div className={`p-3 relative text-sm ${msg.user === user.name ? "bg-blue-500 text-white rounded-tl-lg rounded-bl-lg rounded-tr-lg" : "bg-gray-300 text-gray-800 rounded-tl-lg rounded-br-lg rounded-tr-lg"}`}>
+                    <h1 className="font-bold mb-1">{msg.user}</h1>
+                    <p>{msg.message}</p>
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1 text-right pr-1">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
-                {msg.user === user.name && (
-                  <img
-                    src={Profile}
-                    className="h-12 w-12 bg-slate-600 rounded-full"
-                    alt="profile"
-                  />
-                )}
+                
+                {msg.user === user.name && <img src={Profile} className="h-12 w-12 rounded-full" alt="profile" />}
               </div>
             ))}
+
             {typingUser && (
               <div className="typing-indicator absolute bottom-4 left-4 flex space-x-1 items-start">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -163,7 +150,6 @@ function UserChat() {
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-300"></div>
               </div>
             )}
-
             <div ref={messagesEndRef}></div>
           </div>
         </div>
