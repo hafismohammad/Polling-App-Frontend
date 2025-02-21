@@ -1,35 +1,43 @@
 import { useContext, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFilter,
-  faEllipsisVertical,
+  // faEllipsisVertical,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   getpoll,
   addVote,
   removeCurrentPoll,
   removeVote,
+  listUsers,
 } from "../services/pollService";
 import { toast } from "react-toastify";
 import { getUser } from "../services/userService";
 import { authContext } from "../context/AuthContext";
 import CreatePollModal from "../components/CreatePollModal";
 import useSocket from "../hooks/useSocket";
+import { setUserId } from "../redux/userSlice";
 
 function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [polls, setPolls] = useState([]);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [userId, setuserId] = useState();
+  // const [userId, setuserId] = useState();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filterOption, setFilterOption] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState([]);
+  const [votedUserList, setVotedUserList] = useState([]);
+  const [isModalOpenUserList, setisModalOpenUserList] = useState(false);
 
+  const dispatch = useDispatch();
+  const userId = useSelector((state) => state.user.userId);
   const { token } = useContext(authContext);
   const socket = useSocket("https://polling-app.hpc.tw");
   // const socket = useSocket("http://localhost:8000");
+  console.log("userId from redux", userId);
 
   const openModal = () => {
     setModalOpen(true);
@@ -108,7 +116,7 @@ function Home() {
     const fetchPolls = async () => {
       try {
         const response = await getpoll();
-        
+
         setPolls(response.data.data || []);
       } catch (error) {
         console.error("Failed to fetch polls:", error);
@@ -120,7 +128,10 @@ function Home() {
   useEffect(() => {
     const fetchUser = async () => {
       const response = await getUser(token);
-      setuserId(response.user.id);
+      // setuserId(response.user.id);
+      if (response?.user?.id) {
+        dispatch(setUserId(response.user.id)); // Store in Redux
+      }
     };
     fetchUser();
   }, [token]);
@@ -183,25 +194,20 @@ function Home() {
           pollId: pollId,
           optionId: optionId,
         };
-
+        console.log("removeVote", pollData);
         socket.emit("removeVote", pollData);
 
+        // ✅ Corrected State Update Logic
         setPolls((prevPolls) =>
           prevPolls.map((poll) => {
             if (poll._id === pollId) {
-              const updatedPoll = {
+              return {
                 ...poll,
                 options: poll.options.map((option) => {
-                  const userVote = poll.votedUsers.find(
-                    (vote) =>
-                      vote.userId === response.data.userId &&
-                      vote.optionId === option._id
-                  );
-
-                  if (userVote) {
+                  if (option._id === optionId) {
                     return {
                       ...option,
-                      votes: option.votes - 1,
+                      votes: Math.max(0, option.votes - 1), // Prevent negative votes
                     };
                   }
                   return option;
@@ -210,7 +216,6 @@ function Home() {
                   (vote) => vote.userId !== response.data.userId
                 ),
               };
-              return updatedPoll;
             }
             return poll;
           })
@@ -249,14 +254,16 @@ function Home() {
     }
   }, [socket]);
 
-  // const handleVotedUsers = () => {
-  //   try {
-      
-  //   } catch (error) {
-      
-  //   }
-  // }
- 
+  const handleListUsers = async (pollId) => {
+    try {
+      const response = await listUsers(pollId);
+      setVotedUserList(response.data.votedUsers);
+      setisModalOpenUserList((prev) => !prev);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col lg:flex-row justify-center items-center mt-10 space-y-4 lg:space-y-0 lg:space-x-10">
@@ -283,7 +290,7 @@ function Home() {
             <span className="font-medium">Filter</span>
           </div>
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-full lg:w-48 bg-white border rounded-md shadow-lg">
+            <div className="absolute right-0 mt-2 w-full lg:w-48 bg-white border rounded-md shadow-lg z-50">
               <ul className="py-1">
                 <li
                   onClick={() => handleFilterOption("all")}
@@ -321,18 +328,66 @@ function Home() {
                     <span>{poll.question}</span>
 
                     {/* Ellipsis Button */}
-                    <FontAwesomeIcon
+                    {/* <FontAwesomeIcon
                       onClick={() => handleModal(poll._id)}
                       icon={faEllipsisVertical}
                       className="text-gray-500 text-2xl cursor-pointer ml-4"
-                    />
+                    /> */}
                   </h2>
+                  <div className="flex items-end justify-end gap-4 mb-2">
+                    <button
+                      onClick={() => handleModal(poll._id)}
+                      className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium"
+                    >
+                      Remove Vote
+                    </button>
 
+                    {votedUserList && (
+                      <button
+                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium "
+                        onClick={() => handleListUsers(poll._id)}
+                      >
+                        {" "}
+                        Voted Users
+                      </button>
+                    )}
+                    {userId && poll._id === userId && (
+                      <button className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium">
+                        Delete Poll
+                      </button>
+                    )}
+                  </div>
+                  {isModalOpenUserList && (
+                    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+                      <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
+                        <h2 className="text-xl font-semibold mb-4">
+                          Voted Users
+                        </h2>
+                        <ul className="border border-gray-300 p-3 rounded-md">
+                          {votedUserList.length &&
+                            votedUserList.map((user) => (
+                              <li
+                                key={user.userId}
+                                className="text-gray-700 p-2 border-b last:border-none"
+                              >
+                                {user.name}
+                              </li>
+                            ))}
+                        </ul>
+                        <button
+                          className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 w-full"
+                          onClick={() => setisModalOpenUserList(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {isModalOpen && selectedPoll === poll._id && (
                     <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
                       <ul className="py-1">
                         <li
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer z-50"
                           onClick={() =>
                             handleRemoveVote(
                               poll._id,
@@ -360,7 +415,6 @@ function Home() {
                     </div>
                   )}
                 </div>
-
 
                 <form
                   onSubmit={(e) => {

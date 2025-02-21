@@ -78,3 +78,13 @@ export const removeVote = async (pollId) => {
     throw error.response.data.message;
   }
 }
+
+export const listUsers = async (pollId) => {
+  try {
+    console.log('pollId',pollId)
+    const response = await axiosInstance.get(`/voted-user-list/${pollId}`);
+    return response;
+  } catch (error) {
+    throw error.response.data.message;
+  }
+}
