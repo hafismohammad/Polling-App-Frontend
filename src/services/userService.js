@@ -3,7 +3,7 @@ import axios from "axios";
 const axiosInstance = new axios.create({
   // baseURL:  `https://polling-app.hpc.tw/api/user`,
   // baseURL:  `http://localhost:8000/api/user`,
-  baseURL: `https://polling-app-backend-qvkg.onrender.com`,
+  baseURL: `https://polling-app-backend-qvkg.onrender.com/api/user`,
   withCredentials: true
 });
 

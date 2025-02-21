@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: `https://polling-app-backend-qvkg.onrender.com`,
+  baseURL: `https://polling-app-backend-qvkg.onrender.com/api/user`,
   // baseURL: `http://localhost:8000/api/chat`,
   // baseURL: `https://polling-app.hpc.tw/api/chat`,
 
