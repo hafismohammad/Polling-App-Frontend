@@ -35,7 +35,8 @@ function Home() {
   const dispatch = useDispatch();
   const userId = useSelector((state) => state.user.userId);
   const { token } = useContext(authContext);
-  const socket = useSocket("https://polling-app.hpc.tw");
+  const socket = useSocket('https://polling-app-backend-qvkg.onrender.com');
+  // const socket = useSocket("https://polling-app.hpc.tw");
   // const socket = useSocket("http://localhost:8000");
   console.log("userId from redux", userId);
 

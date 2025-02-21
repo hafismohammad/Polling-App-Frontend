@@ -15,7 +15,8 @@ function Navbar() {
 
   const { token } = useContext(authContext);
   // const socket = useSocket('http://localhost:8000');
-  const socket = useSocket('https://polling-app.hpc.tw');
+  // const socket = useSocket('https://polling-app.hpc.tw');
+   const socket = useSocket('https://polling-app-backend-qvkg.onrender.com');
 
 
   useEffect(() => {
