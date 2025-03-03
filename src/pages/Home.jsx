@@ -28,7 +28,7 @@ function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filterOption, setFilterOption] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPoll, setSelectedPoll] = useState([]);
+  const [selectedPoll, setSelectedPoll] = useState('');
   const [votedUserList, setVotedUserList] = useState([]);
   const [isModalOpenUserList, setisModalOpenUserList] = useState(false);
 
@@ -38,7 +38,8 @@ function Home() {
   const socket = useSocket('https://polling-app-backend-qvkg.onrender.com');
   // const socket = useSocket("https://polling-app.hpc.tw");
   // const socket = useSocket("http://localhost:8000");
-  console.log("userId from redux", userId);
+//   console.log("userId from redux", userId);
+// console.log('selectedPoll',selectedPoll);
 
   const openModal = () => {
     setModalOpen(true);
@@ -149,6 +150,8 @@ function Home() {
 
   const handleDeletePoll = async (pollId) => {
     try {
+      // console.log('hit delete fn', pollId);
+      
       const response = await removeCurrentPoll(pollId);
 
       if (response.status === 200) {
@@ -180,6 +183,8 @@ function Home() {
   };
 
   const handleModal = (pollId) => {
+    // console.log('pollid', pollId);
+    
     setSelectedPoll(pollId);
     setIsModalOpen(!isModalOpen);
   };
@@ -264,6 +269,8 @@ function Home() {
       console.error(error);
     }
   };
+
+  
 
   return (
     <>
@@ -352,11 +359,11 @@ function Home() {
                         Voted Users
                       </button>
                     )}
-                    {userId && poll._id === userId && (
+                    {/* {userId && poll._id === userId && (
                       <button className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium">
                         Delete Poll
                       </button>
-                    )}
+                    )} */}
                   </div>
                   {isModalOpenUserList && (
                     <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
@@ -404,7 +411,7 @@ function Home() {
                         >
                           Voted Users
                         </li> */}
-                        {poll.userId === userId && (
+                        {poll.userId._id === userId && (
                           <li
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleDeletePoll(poll._id)}
