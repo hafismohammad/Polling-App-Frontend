@@ -50,6 +50,7 @@ function Home() {
   };
 
   const handleAddPoll = (newPoll) => {
+    console.log('newPoll', newPoll)
     setPolls((prevPolls) => [newPoll, ...prevPolls]);
   };
 
@@ -150,7 +151,6 @@ function Home() {
 
   const handleDeletePoll = async (pollId) => {
     try {
-      // console.log('hit delete fn', pollId);
       
       const response = await removeCurrentPoll(pollId);
 
@@ -203,7 +203,6 @@ function Home() {
         console.log("removeVote", pollData);
         socket.emit("removeVote", pollData);
 
-        // ✅ Corrected State Update Logic
         setPolls((prevPolls) =>
           prevPolls.map((poll) => {
             if (poll._id === pollId) {
@@ -213,7 +212,7 @@ function Home() {
                   if (option._id === optionId) {
                     return {
                       ...option,
-                      votes: Math.max(0, option.votes - 1), // Prevent negative votes
+                      votes: Math.max(0, option.votes - 1),
                     };
                   }
                   return option;
@@ -269,6 +268,7 @@ function Home() {
       console.error(error);
     }
   };
+
 
   
 
@@ -411,7 +411,7 @@ function Home() {
                         >
                           Voted Users
                         </li> */}
-                        {poll.userId._id === userId && (
+                        {poll.userId === userId  && (
                           <li
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleDeletePoll(poll._id)}
